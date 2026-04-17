@@ -1,0 +1,778 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Heatwave Severity Classifier | Lake Windermere Framework</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght@0,9..144,300..900;1,9..144,300..900&family=Public+Sans:ital,wght@0,300..800;1,300..800&family=JetBrains+Mono:ital,wght@0,400..700;1,400..700&display=swap" rel="stylesheet">
+<style>
+:root {
+  --bg: #f2ede1;
+  --bg-card: #ebe4d4;
+  --bg-input: #faf6ec;
+  --ink: #1a2817;
+  --ink-soft: #4a5247;
+  --ink-mute: #8a8678;
+  --accent: #3d5a3a;
+  --accent-dark: #26371f;
+  --line: #c9c0ac;
+  --line-soft: #d9d1bd;
+  --sev-1: #6b8e5a;
+  --sev-2: #9bab4a;
+  --sev-3: #c4a93a;
+  --sev-4: #b87d2e;
+  --sev-5: #9a3b27;
+}
+
+* { box-sizing: border-box; margin: 0; padding: 0; }
+
+html { scroll-behavior: smooth; }
+
+body {
+  background: var(--bg);
+  color: var(--ink);
+  font-family: 'Public Sans', sans-serif;
+  font-weight: 400;
+  line-height: 1.6;
+  min-height: 100vh;
+  padding: 2rem 1.5rem 4rem;
+  background-image:
+    radial-gradient(circle at 20% 10%, rgba(61,90,58,0.06) 0%, transparent 50%),
+    radial-gradient(circle at 80% 90%, rgba(154,59,39,0.04) 0%, transparent 50%);
+}
+
+.container {
+  max-width: 920px;
+  margin: 0 auto;
+}
+
+/* Header */
+.header {
+  border-bottom: 1px solid var(--line);
+  padding-bottom: 2rem;
+  margin-bottom: 3rem;
+  position: relative;
+}
+
+.header::before {
+  content: "§ 3.4";
+  position: absolute;
+  top: 0;
+  right: 0;
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 0.75rem;
+  color: var(--ink-mute);
+  letter-spacing: 0.1em;
+}
+
+.eyebrow {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 0.7rem;
+  text-transform: uppercase;
+  letter-spacing: 0.25em;
+  color: var(--accent);
+  margin-bottom: 1rem;
+  font-weight: 500;
+}
+
+h1 {
+  font-family: 'Fraunces', serif;
+  font-weight: 400;
+  font-size: clamp(2.2rem, 5vw, 3.6rem);
+  line-height: 1;
+  letter-spacing: -0.02em;
+  margin-bottom: 1rem;
+  font-variation-settings: "opsz" 144, "SOFT" 50;
+}
+
+h1 em {
+  font-style: italic;
+  font-weight: 300;
+  color: var(--accent);
+}
+
+.subtitle {
+  font-family: 'Fraunces', serif;
+  font-style: italic;
+  font-size: 1.05rem;
+  color: var(--ink-soft);
+  max-width: 640px;
+  font-weight: 300;
+}
+
+/* Equation block */
+.equation {
+  background: var(--bg-card);
+  border-left: 3px solid var(--accent);
+  padding: 1.25rem 1.5rem;
+  margin: 2rem 0 3rem;
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 0.95rem;
+  overflow-x: auto;
+}
+
+.equation-label {
+  font-family: 'Public Sans', sans-serif;
+  font-size: 0.7rem;
+  text-transform: uppercase;
+  letter-spacing: 0.2em;
+  color: var(--ink-mute);
+  margin-bottom: 0.5rem;
+  font-weight: 600;
+}
+
+.equation-math {
+  color: var(--ink);
+  letter-spacing: 0.02em;
+}
+
+.equation-math .var { color: var(--accent-dark); font-weight: 700; }
+.equation-math .op { color: var(--ink-mute); margin: 0 0.3em; }
+
+/* Section headers */
+h2 {
+  font-family: 'Fraunces', serif;
+  font-weight: 500;
+  font-size: 1.4rem;
+  letter-spacing: -0.01em;
+  margin-bottom: 0.25rem;
+  display: flex;
+  align-items: baseline;
+  gap: 0.75rem;
+}
+
+h2 .num {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 0.75rem;
+  color: var(--ink-mute);
+  font-weight: 400;
+}
+
+.section-desc {
+  color: var(--ink-soft);
+  font-size: 0.92rem;
+  margin-bottom: 1.5rem;
+  max-width: 620px;
+}
+
+.section {
+  margin-bottom: 3rem;
+}
+
+/* Parameter rows */
+.param-grid {
+  display: grid;
+  gap: 0.5rem;
+  border-top: 1px solid var(--line-soft);
+}
+
+.param-header {
+  display: grid;
+  grid-template-columns: 1fr 200px 220px;
+  gap: 1.5rem;
+  padding: 0.75rem 0;
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 0.68rem;
+  text-transform: uppercase;
+  letter-spacing: 0.15em;
+  color: var(--ink-mute);
+  border-bottom: 1px solid var(--line-soft);
+}
+
+.param-row {
+  display: grid;
+  grid-template-columns: 1fr 200px 220px;
+  gap: 1.5rem;
+  align-items: center;
+  padding: 1.25rem 0;
+  border-bottom: 1px solid var(--line-soft);
+}
+
+@media (max-width: 680px) {
+  .param-header { display: none; }
+  .param-row {
+    grid-template-columns: 1fr;
+    gap: 0.75rem;
+    padding: 1.5rem 0;
+  }
+  .param-row .field-label { display: block; }
+}
+
+.field-label {
+  display: none;
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 0.65rem;
+  text-transform: uppercase;
+  letter-spacing: 0.15em;
+  color: var(--ink-mute);
+  margin-bottom: 0.3rem;
+}
+
+.param-name {
+  font-family: 'Fraunces', serif;
+  font-size: 1.15rem;
+  font-weight: 500;
+}
+
+.param-name small {
+  display: block;
+  font-family: 'Public Sans', sans-serif;
+  font-size: 0.78rem;
+  font-weight: 400;
+  color: var(--ink-mute);
+  margin-top: 0.15rem;
+  letter-spacing: 0.02em;
+}
+
+/* Inputs */
+.input-group {
+  display: flex;
+  align-items: center;
+  border: 1px solid var(--line);
+  background: var(--bg-input);
+  transition: border-color 0.2s;
+}
+
+.input-group:focus-within {
+  border-color: var(--accent);
+}
+
+.input-group input {
+  flex: 1;
+  padding: 0.7rem 0.9rem;
+  border: none;
+  background: transparent;
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 1rem;
+  color: var(--ink);
+  min-width: 0;
+  outline: none;
+}
+
+.input-group input[type="number"]::-webkit-inner-spin-button,
+.input-group input[type="number"]::-webkit-outer-spin-button {
+  -webkit-appearance: none;
+  margin: 0;
+}
+
+.input-affix {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 0.8rem;
+  color: var(--ink-mute);
+  padding: 0 0.9rem;
+  border-left: 1px solid var(--line-soft);
+  align-self: stretch;
+  display: flex;
+  align-items: center;
+}
+
+/* Severity slider */
+.severity-control {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+}
+
+.severity-slider {
+  flex: 1;
+  -webkit-appearance: none;
+  appearance: none;
+  height: 2px;
+  background: var(--line);
+  outline: none;
+  cursor: pointer;
+}
+
+.severity-slider::-webkit-slider-thumb {
+  -webkit-appearance: none;
+  appearance: none;
+  width: 18px;
+  height: 18px;
+  background: var(--accent);
+  border: 3px solid var(--bg);
+  border-radius: 50%;
+  cursor: pointer;
+  box-shadow: 0 0 0 1px var(--accent);
+}
+
+.severity-slider::-moz-range-thumb {
+  width: 18px;
+  height: 18px;
+  background: var(--accent);
+  border: 3px solid var(--bg);
+  border-radius: 50%;
+  cursor: pointer;
+  box-shadow: 0 0 0 1px var(--accent);
+}
+
+.severity-value {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 1.1rem;
+  font-weight: 600;
+  color: var(--ink);
+  min-width: 2ch;
+  text-align: center;
+  padding: 0.3rem 0.7rem;
+  background: var(--bg-input);
+  border: 1px solid var(--line);
+}
+
+/* Controls */
+.controls {
+  display: flex;
+  gap: 0.75rem;
+  flex-wrap: wrap;
+  margin-bottom: 2rem;
+}
+
+.btn {
+  font-family: 'Public Sans', sans-serif;
+  font-size: 0.82rem;
+  text-transform: uppercase;
+  letter-spacing: 0.12em;
+  font-weight: 500;
+  padding: 0.75rem 1.4rem;
+  border: 1px solid var(--ink);
+  background: transparent;
+  color: var(--ink);
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.btn:hover {
+  background: var(--ink);
+  color: var(--bg);
+}
+
+.btn-primary {
+  background: var(--accent);
+  color: var(--bg);
+  border-color: var(--accent);
+}
+
+.btn-primary:hover {
+  background: var(--accent-dark);
+  border-color: var(--accent-dark);
+}
+
+/* Weight validation */
+.weight-sum {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 0.78rem;
+  color: var(--ink-mute);
+  margin-top: 0.75rem;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 0.5rem 0.9rem;
+  background: var(--bg-input);
+  border: 1px solid var(--line-soft);
+}
+
+.weight-sum.valid { border-color: var(--sev-1); color: var(--sev-1); }
+.weight-sum.invalid { border-color: var(--sev-5); color: var(--sev-5); }
+
+/* Result */
+.result {
+  margin-top: 3rem;
+  border: 1px solid var(--line);
+  background: var(--bg-card);
+  padding: 2.5rem;
+  position: relative;
+  overflow: hidden;
+}
+
+.result::before {
+  content: "";
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 4px;
+  height: 100%;
+  background: var(--result-color, var(--accent));
+  transition: background 0.3s;
+}
+
+.result-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  margin-bottom: 1.5rem;
+  padding-bottom: 1rem;
+  border-bottom: 1px solid var(--line-soft);
+}
+
+.result-eyebrow {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 0.7rem;
+  text-transform: uppercase;
+  letter-spacing: 0.25em;
+  color: var(--ink-mute);
+}
+
+.result-timestamp {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 0.7rem;
+  color: var(--ink-mute);
+}
+
+.result-main {
+  display: grid;
+  grid-template-columns: auto 1fr;
+  gap: 2.5rem;
+  align-items: center;
+}
+
+@media (max-width: 680px) {
+  .result-main { grid-template-columns: 1fr; gap: 1.5rem; }
+}
+
+.result-number {
+  font-family: 'Fraunces', serif;
+  font-size: clamp(5rem, 15vw, 7.5rem);
+  line-height: 0.9;
+  font-weight: 300;
+  color: var(--result-color, var(--accent));
+  font-variation-settings: "opsz" 144;
+  letter-spacing: -0.04em;
+  position: relative;
+}
+
+.result-number::after {
+  content: "/5";
+  font-size: 0.25em;
+  color: var(--ink-mute);
+  font-weight: 400;
+  margin-left: 0.1em;
+  vertical-align: 0.15em;
+}
+
+.result-label {
+  font-family: 'Fraunces', serif;
+  font-size: 1.4rem;
+  font-weight: 500;
+  margin-bottom: 0.5rem;
+  letter-spacing: -0.01em;
+}
+
+.result-desc {
+  font-size: 0.95rem;
+  color: var(--ink-soft);
+  line-height: 1.5;
+}
+
+.result-score {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 0.82rem;
+  color: var(--ink-mute);
+  margin-top: 1rem;
+  padding-top: 1rem;
+  border-top: 1px dashed var(--line-soft);
+}
+
+.result-score strong {
+  color: var(--ink);
+  font-weight: 600;
+}
+
+/* Severity bar */
+.severity-bar {
+  display: grid;
+  grid-template-columns: repeat(5, 1fr);
+  gap: 2px;
+  margin-top: 2rem;
+  padding-top: 1.5rem;
+  border-top: 1px solid var(--line-soft);
+}
+
+.severity-bar-segment {
+  text-align: center;
+  padding: 0.5rem 0.3rem;
+  border-top: 3px solid var(--line-soft);
+  transition: all 0.3s;
+  opacity: 0.4;
+}
+
+.severity-bar-segment.active {
+  opacity: 1;
+  border-top-color: var(--seg-color);
+}
+
+.severity-bar-num {
+  font-family: 'Fraunces', serif;
+  font-size: 1.2rem;
+  font-weight: 500;
+}
+
+.severity-bar-range {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 0.65rem;
+  color: var(--ink-mute);
+  letter-spacing: 0.02em;
+}
+
+/* Footer */
+.footer {
+  margin-top: 4rem;
+  padding-top: 2rem;
+  border-top: 1px solid var(--line-soft);
+  font-size: 0.82rem;
+  color: var(--ink-mute);
+  display: flex;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 1rem;
+}
+
+.footer em {
+  font-family: 'Fraunces', serif;
+  font-style: italic;
+}
+
+/* Animations */
+@keyframes fadeIn {
+  from { opacity: 0; transform: translateY(8px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+.result { animation: fadeIn 0.4s ease-out; }
+.section { animation: fadeIn 0.5s ease-out both; }
+.section:nth-child(2) { animation-delay: 0.05s; }
+.section:nth-child(3) { animation-delay: 0.1s; }
+
+</style>
+</head>
+<body>
+<div class="container">
+
+  <header class="header">
+    <div class="eyebrow">Freshwater Heatwave Classification Framework</div>
+    <h1>Heatwave <em>Severity</em> Classifier</h1>
+    <p class="subtitle">A multi-parameter biogeochemical severity scoring tool derived from long-term monitoring data of the South Basin, Lake Windermere. Calibrated per lake using correlation shifts between normal and heatwave conditions.</p>
+  </header>
+
+  <div class="equation">
+    <div class="equation-label">Severity Equation</div>
+    <div class="equation-math">
+      <span class="var">S</span><span class="op">=</span>Σ(<span class="var">wᵢ</span><span class="op">×</span><span class="var">Sᵢ</span>) <span class="op">=</span>(<span class="var">w_P</span><span class="op">·</span><span class="var">S_P</span>)<span class="op">+</span>(<span class="var">w_N</span><span class="op">·</span><span class="var">S_N</span>)<span class="op">+</span>(<span class="var">w_Chl</span><span class="op">·</span><span class="var">S_Chl</span>)
+    </div>
+  </div>
+
+  <section class="section">
+    <h2><span class="num">01</span> Parameter Weights</h2>
+    <p class="section-desc">Lake-specific weights derived from the magnitude of correlation shift (Δr) between normal and heatwave conditions. Must sum to 1.00. Defaults below are calibrated for Lake Windermere.</p>
+
+    <div class="controls">
+      <button class="btn btn-primary" onclick="loadWindermereDefaults()">Use Windermere Defaults</button>
+      <button class="btn" onclick="resetAll()">Reset All</button>
+    </div>
+
+    <div class="param-grid">
+      <div class="param-header">
+        <div>Parameter</div>
+        <div>Weight (wᵢ)</div>
+        <div>Severity Score (Sᵢ)</div>
+      </div>
+
+      <div class="param-row">
+        <div class="param-name">Phosphorus <small>PO₄-P</small></div>
+        <div>
+          <div class="field-label">Weight</div>
+          <div class="input-group">
+            <input type="number" id="w-p" value="0.37" step="0.01" min="0" max="1" oninput="calculate()">
+            <div class="input-affix">w_P</div>
+          </div>
+        </div>
+        <div>
+          <div class="field-label">Severity</div>
+          <div class="severity-control">
+            <input type="range" id="s-p" class="severity-slider" min="1" max="5" step="1" value="3" oninput="calculate()">
+            <div class="severity-value" id="s-p-val">3</div>
+          </div>
+        </div>
+      </div>
+
+      <div class="param-row">
+        <div class="param-name">Nitrate <small>NO₃-N · depletion scored</small></div>
+        <div>
+          <div class="field-label">Weight</div>
+          <div class="input-group">
+            <input type="number" id="w-n" value="0.32" step="0.01" min="0" max="1" oninput="calculate()">
+            <div class="input-affix">w_N</div>
+          </div>
+        </div>
+        <div>
+          <div class="field-label">Severity</div>
+          <div class="severity-control">
+            <input type="range" id="s-n" class="severity-slider" min="1" max="5" step="1" value="3" oninput="calculate()">
+            <div class="severity-value" id="s-n-val">3</div>
+          </div>
+        </div>
+      </div>
+
+      <div class="param-row">
+        <div class="param-name">Chlorophyll <small>Chl-a</small></div>
+        <div>
+          <div class="field-label">Weight</div>
+          <div class="input-group">
+            <input type="number" id="w-chl" value="0.30" step="0.01" min="0" max="1" oninput="calculate()">
+            <div class="input-affix">w_Chl</div>
+          </div>
+        </div>
+        <div>
+          <div class="field-label">Severity</div>
+          <div class="severity-control">
+            <input type="range" id="s-chl" class="severity-slider" min="1" max="5" step="1" value="3" oninput="calculate()">
+            <div class="severity-value" id="s-chl-val">3</div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="weight-sum" id="weight-sum">
+      <span>Σ weights</span>
+      <span id="weight-sum-value">0.99</span>
+    </div>
+  </section>
+
+  <div class="result" id="result">
+    <div class="result-header">
+      <div class="result-eyebrow">Output · Severity Classification</div>
+      <div class="result-timestamp" id="timestamp"></div>
+    </div>
+
+    <div class="result-main">
+      <div class="result-number" id="band-number">3</div>
+      <div>
+        <div class="result-label" id="band-label">Moderate Disruption</div>
+        <div class="result-desc" id="band-desc">Likely onset of internal loading. Sustained thermal stress is beginning to decouple normal nutrient cycling relationships.</div>
+        <div class="result-score">Weighted score <strong id="score-value">3.00</strong> · Band range <span id="band-range">2.6 – 3.4</span></div>
+      </div>
+    </div>
+
+    <div class="severity-bar" id="severity-bar">
+      <div class="severity-bar-segment" data-band="1" style="--seg-color: var(--sev-1)">
+        <div class="severity-bar-num">1</div>
+        <div class="severity-bar-range">1.0–1.8</div>
+      </div>
+      <div class="severity-bar-segment" data-band="2" style="--seg-color: var(--sev-2)">
+        <div class="severity-bar-num">2</div>
+        <div class="severity-bar-range">1.8–2.6</div>
+      </div>
+      <div class="severity-bar-segment" data-band="3" style="--seg-color: var(--sev-3)">
+        <div class="severity-bar-num">3</div>
+        <div class="severity-bar-range">2.6–3.4</div>
+      </div>
+      <div class="severity-bar-segment" data-band="4" style="--seg-color: var(--sev-4)">
+        <div class="severity-bar-num">4</div>
+        <div class="severity-bar-range">3.4–4.2</div>
+      </div>
+      <div class="severity-bar-segment" data-band="5" style="--seg-color: var(--sev-5)">
+        <div class="severity-bar-num">5</div>
+        <div class="severity-bar-range">4.2–5.0</div>
+      </div>
+    </div>
+  </div>
+
+  <footer class="footer">
+    <div><em>Framework calibrated against long-term South Basin monitoring (1945–2018)</em></div>
+    <div>Built as a worked example of § 3.4</div>
+  </footer>
+</div>
+
+<script>
+const bands = [
+  { min: 1.0, max: 1.8, num: 1, label: 'Limited Disruption', desc: 'Biogeochemical parameters remain close to expected seasonal values. Thermal stress has not produced a meaningful departure from normal cycling.', color: 'var(--sev-1)' },
+  { min: 1.8, max: 2.6, num: 2, label: 'Mild Disruption', desc: 'Indicator parameters showing noticeable deviation from seasonal baselines. Early signs of heatwave-driven stress across the water column.', color: 'var(--sev-2)' },
+  { min: 2.6, max: 3.4, num: 3, label: 'Moderate Disruption', desc: 'Likely onset of internal loading. Sustained thermal stress is beginning to decouple normal nutrient cycling relationships.', color: 'var(--sev-3)' },
+  { min: 3.4, max: 4.2, num: 4, label: 'Severe Disruption', desc: 'Significant ecological stress. Multi-parameter deviation suggests active anoxia-driven phosphorus release and phytoplankton community destabilisation.', color: 'var(--sev-4)' },
+  { min: 4.2, max: 5.0, num: 5, label: 'Extreme Disruption', desc: 'Multi-parameter thresholds exceeded. Conditions warrant consideration of targeted intervention such as hypolimnetic aeration.', color: 'var(--sev-5)' }
+];
+
+function calculate() {
+  const wP = parseFloat(document.getElementById('w-p').value) || 0;
+  const wN = parseFloat(document.getElementById('w-n').value) || 0;
+  const wChl = parseFloat(document.getElementById('w-chl').value) || 0;
+  const sP = parseFloat(document.getElementById('s-p').value);
+  const sN = parseFloat(document.getElementById('s-n').value);
+  const sChl = parseFloat(document.getElementById('s-chl').value);
+
+  document.getElementById('s-p-val').textContent = sP;
+  document.getElementById('s-n-val').textContent = sN;
+  document.getElementById('s-chl-val').textContent = sChl;
+
+  const weightSum = wP + wN + wChl;
+  const sumEl = document.getElementById('weight-sum');
+  const sumValEl = document.getElementById('weight-sum-value');
+  sumValEl.textContent = weightSum.toFixed(2);
+
+  if (Math.abs(weightSum - 1.0) < 0.01) {
+    sumEl.classList.add('valid');
+    sumEl.classList.remove('invalid');
+  } else {
+    sumEl.classList.add('invalid');
+    sumEl.classList.remove('valid');
+  }
+
+  const score = (wP * sP) + (wN * sN) + (wChl * sChl);
+  const clampedScore = Math.max(1.0, Math.min(5.0, score));
+
+  let activeBand = bands[0];
+  for (const band of bands) {
+    if (clampedScore >= band.min && clampedScore <= band.max) {
+      activeBand = band;
+    }
+  }
+  if (clampedScore >= 4.2) activeBand = bands[4];
+
+  document.getElementById('score-value').textContent = score.toFixed(2);
+  document.getElementById('band-number').textContent = activeBand.num;
+  document.getElementById('band-label').textContent = activeBand.label;
+  document.getElementById('band-desc').textContent = activeBand.desc;
+  document.getElementById('band-range').textContent = activeBand.min.toFixed(1) + ' – ' + activeBand.max.toFixed(1);
+
+  document.getElementById('result').style.setProperty('--result-color', activeBand.color);
+  document.getElementById('band-number').style.color = activeBand.color;
+
+  document.querySelectorAll('.severity-bar-segment').forEach(seg => {
+    const bandNum = parseInt(seg.getAttribute('data-band'));
+    if (bandNum === activeBand.num) {
+      seg.classList.add('active');
+    } else {
+      seg.classList.remove('active');
+    }
+  });
+
+  updateTimestamp();
+}
+
+function updateTimestamp() {
+  const now = new Date();
+  const iso = now.toISOString().split('T')[0] + ' · ' + now.toTimeString().slice(0,5);
+  document.getElementById('timestamp').textContent = iso;
+}
+
+function loadWindermereDefaults() {
+  document.getElementById('w-p').value = 0.37;
+  document.getElementById('w-n').value = 0.32;
+  document.getElementById('w-chl').value = 0.30;
+  calculate();
+}
+
+function resetAll() {
+  document.getElementById('w-p').value = 0.33;
+  document.getElementById('w-n').value = 0.33;
+  document.getElementById('w-chl').value = 0.34;
+  document.getElementById('s-p').value = 3;
+  document.getElementById('s-n').value = 3;
+  document.getElementById('s-chl').value = 3;
+  calculate();
+}
+
+calculate();
+</script>
+
+</body>
+</html>
